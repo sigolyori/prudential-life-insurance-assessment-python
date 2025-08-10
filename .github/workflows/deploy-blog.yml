@@ -1,0 +1,50 @@
+name: Deploy Blog
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'blog/**'
+      - '.github/workflows/deploy-blog.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy-blog:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: '1.3.433'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-deploy.txt
+      
+      - name: Render blog
+        uses: quarto-dev/quarto-actions/render@v2
+        with:
+          working-dir: blog
+          output-dir: _site
+      
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: blog/_site
+          branch: gh-pages
+          clean: true
+          clean-exclude: |
+            .git
+            .gitignore
+            .nojekyll

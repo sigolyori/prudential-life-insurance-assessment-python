@@ -1,0 +1,17 @@
+numpy
+pandas
+scipy
+scikit-learn
+matplotlib
+seaborn
+missingno
+optuna
+lightgbm
+joblib
+shap
+jupyter
+ipykernel
+gradio
+openai
+pillow
+python-dotenv
