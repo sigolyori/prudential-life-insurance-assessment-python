@@ -2,9 +2,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![CI](https://github.com/yourusername/prudential-life-insurance-assessment-python/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/prudential-life-insurance-assessment-python/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/yourusername/prudential-life-insurance-assessment-python/branch/main/graph/badge.svg?token=YOUR-TOKEN-HERE)](https://codecov.io/gh/yourusername/prudential-life-insurance-assessment-python)
 
 머신러닝을 활용한 Prudential 생명보험 언더라이팅 평가 모델
 
@@ -17,7 +14,7 @@
 - **고급 전처리 파이프라인**: KNN, MICE를 활용한 하이브리드 결측치 처리
 - **다양한 모델 지원**: LightGBM, XGBoost, CatBoost 등
 - **모델 해석 도구**: SHAP 값을 활용한 예측 해석
-- **대화형 웹 데모**: Gradio 기반 사용자 인터페이스
+- **대화형 웹 데모**: Streamlit 기반 사용자 인터페이스
 - **자동화된 CI/CD**: 테스트, 린트, 배포 자동화
 
 ## 🚀 시작하기
@@ -32,7 +29,7 @@
 
 1. **저장소 클론**
    ```bash
-   git clone https://github.com/yourusername/prudential-life-insurance-assessment-python.git
+   git clone https://github.com/sigolyori/prudential-life-insurance-assessment-python.git
    cd prudential-life-insurance-assessment-python
    ```
 
