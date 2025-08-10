@@ -85,12 +85,22 @@ print(results)
 
 ### 웹 데모 실행
 
+#### Gradio 앱으로 실행
 ```bash
 # 로컬에서 실행
 python app.py
 
 # 또는 개발 모드로 실행
 python -m src.mockup_app
+```
+
+#### Streamlit 앱으로 실행 (권장)
+```bash
+# 의존성 설치
+pip install -r requirements-streamlit.txt
+
+# 로컬에서 실행
+streamlit run streamlit_app.py
 ```
 
 ## 🛠 프로젝트 구조
@@ -144,6 +154,7 @@ prudential-life-insurance-assessment-python/
 ├── .dockerignore              # Docker 빌드 컨텍스트 제외 파일
 ├── .gitignore                 # Git 추적 제외 파일
 ├── app.py                     # 배포용 Gradio 앱
+├── streamlit_app.py           # Streamlit 웹 앱
 ├── Dockerfile                 # Docker 컨테이너 설정
 ├── pyproject.toml             # 프로젝트 메타데이터 및 의존성
 ├── README.md                  # 이 파일
@@ -151,6 +162,16 @@ prudential-life-insurance-assessment-python/
 ```
 
 ## 🚀 배포
+
+### Streamlit Cloud에 배포 (추천)
+
+1. [Streamlit Cloud](https://share.streamlit.io/)에 로그인
+2. "New app" 클릭
+3. GitHub 저장소 선택 후 다음 설정:
+   - Repository: `yourusername/prudential-life-insurance-assessment-python`
+   - Branch: `main`
+   - Main file path: `streamlit_app.py`
+4. "Deploy!" 클릭
 
 ### Hugging Face Spaces에 배포
 

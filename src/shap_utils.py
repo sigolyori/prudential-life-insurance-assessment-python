@@ -164,9 +164,26 @@ def waterfall_figure_for_instance(pipeline, X: pd.DataFrame, index: int, top_k: 
             f"Unexpected pred_contrib shape: {contribs.shape}, n_features={n_features}"
         )
 
+    # Resolve feature names robustly so length matches transformed features
     feature_names = getattr(pipeline, "_shap_cache", {}).get("feature_names")  # type: ignore[attr-defined]
-    if not feature_names:
-        feature_names = _get_feature_names(pre, list(X.columns))
+    try:
+        # If cache is missing or mismatched length, regenerate
+        if not feature_names or len(feature_names) != n_features:
+            # Try sklearn's get_feature_names_out with input feature names
+            try:
+                feature_names = list(pre.get_feature_names_out(input_features=list(X.columns)))
+            except Exception:
+                try:
+                    # Try without arguments (sklearn >=1.0 often supports this)
+                    feature_names = list(pre.get_feature_names_out())
+                except Exception:
+                    # Final fallback: generic names matching transformed dimension
+                    feature_names = [f"feature_{i}" for i in range(n_features)]
+        # Ensure correct length; otherwise fallback to generic
+        if len(feature_names) != n_features:
+            feature_names = [f"feature_{i}" for i in range(n_features)]
+    except Exception:
+        feature_names = [f"feature_{i}" for i in range(n_features)]
 
     # Prepare top_k subset for readability
     order = np.argsort(np.abs(values))[::-1][:top_k]

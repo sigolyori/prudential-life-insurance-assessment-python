@@ -15,12 +15,12 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
 
 from src.mockup_app import launch_demo_with_dataset
-from src.data import load_data
+from src.data import load_train, load_test
 from src.persist import load_pipeline
 
 # Load data and model
 print("Loading data and model...")
-_, X_test, _ = load_data()
+X_test = load_test()  # We only need test data for the demo
 pipeline = load_pipeline("data/processed/final_pipe.joblib")
 
 # Set up the Gradio interface

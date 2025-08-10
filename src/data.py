@@ -18,14 +18,20 @@ def split_X_y(df: pd.DataFrame, target_col: str = TARGET_COL):
     return X, y
 
 
-def load_train(data_dir: Path | None = None) -> pd.DataFrame:
+def load_train(data_dir: Path | None = None, drop_id: bool = True) -> pd.DataFrame:
     base = Path(data_dir) if data_dir else DATA_DIR
-    return pd.read_csv(base / "train.csv")
+    df = pd.read_csv(base / "train.csv")
+    if drop_id and ID_COL in df.columns:
+        return df.drop(columns=[ID_COL])
+    return df
 
 
-def load_test(data_dir: Path | None = None) -> pd.DataFrame:
+def load_test(data_dir: Path | None = None, drop_id: bool = True) -> pd.DataFrame:
     base = Path(data_dir) if data_dir else DATA_DIR
-    return pd.read_csv(base / "test.csv")
+    df = pd.read_csv(base / "test.csv")
+    if drop_id and ID_COL in df.columns:
+        return df.drop(columns=[ID_COL])
+    return df
 
 
 def load_sample_submission(data_dir: Path | None = None) -> pd.DataFrame:

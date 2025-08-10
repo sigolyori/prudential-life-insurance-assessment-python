@@ -5,7 +5,7 @@ import numpy as np
 
 # Project paths
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR = PROJECT_ROOT / "data" / "raw"  # Point to the raw data directory
 
 # Columns
 TARGET_COL = "Response"
