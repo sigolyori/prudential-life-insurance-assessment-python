@@ -170,6 +170,8 @@ prudential-life-insurance-assessment-python/
    - Main file path: `streamlit_app.py`
 4. "Deploy!" 클릭
 
+**👉 [실제 배포된 앱 바로가기](https://sigolyori-prudential-life-insurance-assess-streamlit-app-ddmkre.streamlit.app/)**
+
 ### Hugging Face Spaces에 배포
 
 1. Hugging Face 계정 생성 및 로그인
@@ -198,19 +200,6 @@ docker run -p 7860:7860 prudential-insurance-app
 | CatBoost | 0.71 | 0.70 |
 | Random Forest | 0.68 | 0.67 |
 | Logistic Regression | 0.65 | 0.64 |
-
-## 🤝 기여하기
-
-기여를 환영합니다! 다음 단계를 따라주세요:
-
-1. 이슈를 생성하여 변경사항을 논의하세요
-2. 포크하고 기능 브랜치를 만드세요
-3. 변경사항을 커밋하고 푸시하세요
-4. 풀 리퀘스트를 열어주세요
-
-## 📝 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 ## 📬 연락처
 
