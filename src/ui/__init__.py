@@ -1,4 +1,4 @@
-from .state import get_model_info, load_resources
+from .state import ResourceLoadError, get_model_info, load_dataset_shap, load_resources
 from .components import (
     render_ai_explanation,
     render_decision_badge,
@@ -8,7 +8,9 @@ from .components import (
 )
 
 __all__ = [
+    "ResourceLoadError",
     "load_resources",
+    "load_dataset_shap",
     "get_model_info",
     "render_sidebar",
     "render_decision_badge",

@@ -15,8 +15,7 @@ def tune_lightgbm(df_sample, X, y, n_trials: int = 30, n_splits: int = 5, random
 
     def objective(trial: optuna.Trial) -> float:
         params = {
-            "objective": "multiclass",
-            "num_class": 8,
+            "objective": "binary",
             "random_state": random_state,
             "n_estimators": trial.suggest_int("n_estimators", 400, 1500),
             "learning_rate": trial.suggest_float("learning_rate", 1e-2, 2e-1, log=True),
@@ -38,6 +37,6 @@ def tune_lightgbm(df_sample, X, y, n_trials: int = 30, n_splits: int = 5, random
     study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
     best_params = study.best_params
-    best_params.update({"objective": "multiclass", "num_class": 8, "random_state": random_state})
+    best_params.update({"objective": "binary", "random_state": random_state})
     best_model = LGBMClassifier(**best_params)
     return best_model, best_params

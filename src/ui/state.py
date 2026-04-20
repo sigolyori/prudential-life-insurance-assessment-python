@@ -1,15 +1,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from pathlib import Path
+from typing import Any, List, Optional
 
 import pandas as pd
 import streamlit as st
 
-from ..config import MODEL_PATH
+from ..config import DATA_DIR, MODEL_PATH
 from ..data import load_test
 from ..persist import load_pipeline
-from ..shap_utils import prime_shap_cache, _extract_estimator, _is_lgbm
+from ..shap_utils import (
+    _extract_estimator,
+    _is_lgbm,
+    compute_dataset_shap,
+    prime_shap_cache,
+)
+
+
+class ResourceLoadError(RuntimeError):
+    """Raised when model or data cannot be loaded."""
 
 
 @dataclass
@@ -27,8 +37,19 @@ class ModelInfo:
     is_lgbm: bool
 
 
+def _require_file(path: Path, label: str) -> None:
+    if not path.exists():
+        raise ResourceLoadError(
+            f"{label} 파일을 찾을 수 없습니다: {path}. "
+            f"Kaggle Prudential 데이터를 `data/raw/`에 배치했는지 확인하세요."
+        )
+
+
 @st.cache_resource(show_spinner="Loading model and data...")
 def load_resources() -> Resources:
+    _require_file(DATA_DIR / "test.csv", "test.csv")
+    _require_file(Path(str(MODEL_PATH)), "final_pipe.joblib")
+
     X_test = load_test(drop_id=True)
     pipeline = load_pipeline(str(MODEL_PATH))
 
@@ -45,6 +66,17 @@ def load_resources() -> Resources:
             pass
 
     return Resources(X_test=X_test, pipeline=pipeline, feature_names=feature_names)
+
+
+@st.cache_resource(show_spinner="Computing dataset-level SHAP values...")
+def load_dataset_shap(_pipeline, X: pd.DataFrame, max_samples: int = 200) -> Optional[dict[str, Any]]:
+    clf = _extract_estimator(_pipeline)
+    if not _is_lgbm(clf):
+        return None
+    try:
+        return compute_dataset_shap(_pipeline, X, max_samples=max_samples)
+    except Exception:
+        return None
 
 
 def get_model_info(pipeline) -> ModelInfo:

@@ -44,3 +44,16 @@ def split_X_y(df: pd.DataFrame, target_col: str = TARGET_COL) -> Tuple[pd.DataFr
 
 
 split_features_target = split_X_y
+
+
+def binarize_target(df: pd.DataFrame, target_col: str = TARGET_COL) -> pd.DataFrame:
+    """Collapse the 8-class ordinal Response into a binary underwriting label.
+
+    Response == 1 → 1 (reject), Response ∈ {2..8} → 0 (approve).
+    The Prudential dataset does not publish the precise semantics of the
+    Response classes; this binarization encodes the assumption documented
+    in the project README.
+    """
+    out = df.copy()
+    out[target_col] = (out[target_col] == 1).astype(int)
+    return out
