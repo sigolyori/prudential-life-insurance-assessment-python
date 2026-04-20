@@ -12,9 +12,10 @@
 ### 🌟 주요 기능
 
 - **고급 전처리 파이프라인**: KNN, MICE를 활용한 하이브리드 결측치 처리
-- **다양한 모델 지원**: LightGBM, XGBoost, CatBoost 등
-- **모델 해석 도구**: SHAP 값을 활용한 예측 해석
-- **대화형 웹 데모**: Streamlit 기반 사용자 인터페이스
+- **다양한 모델 지원**: LightGBM, Random Forest, Logistic Regression, SVM (기본값: LightGBM)
+- **빠른 모델 해석**: LightGBM 네이티브 `pred_contrib` 기반 SHAP + Waterfall 차트
+- **GenAI 설명 생성**: OpenAI API를 이용한 한국어/영어 언더라이팅 사유 자동 생성 (오프라인 폴백 지원)
+- **대화형 웹 데모**: Streamlit 대시보드 (Plotly 확률 차트, 다국어 토글, Top-K 슬라이더)
 - **자동화된 CI/CD**: 테스트, 린트, 배포 자동화
 
 ## 🚀 시작하기
@@ -133,15 +134,20 @@ prudential-life-insurance-assessment-python/
 │
 ├── src/                        # 소스 코드
 │   ├── __init__.py
-│   ├── config.py              # 설정 관리
-│   ├── data.py                # 데이터 로드 및 전처리
-│   ├── models.py              # 모델 정의 및 학습
-│   ├── preprocess.py          # 전처리 파이프라인
-│   ├── metrics.py             # 사용자 정의 평가 지표
-│   ├── shap_utils.py          # SHAP 유틸리티
+│   ├── config.py              # 설정/상수 관리 (경로, 클래스 수, 결정 규칙 등)
+│   ├── data.py                # 데이터 로드
+│   ├── preprocess.py          # 전처리 파이프라인 (KNN/MICE 하이브리드)
+│   ├── models.py              # 모델 파이프라인 팩토리
+│   ├── tuning.py              # Optuna 기반 LightGBM 튜닝
+│   ├── metrics.py             # QWK(Quadratic Weighted Kappa) scorer
+│   ├── shap_utils.py          # LightGBM pred_contrib 기반 SHAP 유틸리티
+│   ├── persist.py             # 모델 저장/로드 + SHAP 캐시
+│   ├── genai.py               # OpenAI 기반 언더라이팅 설명 생성
 │   ├── mockup_app.py          # Gradio 데모 앱
-│   ├── tuning.py              # 하이퍼파라미터 튜닝
-│   └── persist.py             # 모델 저장/로드
+│   └── ui/                    # Streamlit UI 컴포넌트
+│       ├── __init__.py
+│       ├── state.py           # 캐시된 리소스 로더
+│       └── components.py      # 대시보드 재사용 컴포넌트
 │
 ├── tests/                      # 단위 테스트
 │   ├── test_data.py
@@ -191,15 +197,16 @@ docker run -p 7860:7860 prudential-insurance-app
 
 ## 📈 성능
 
-### 모델 성능 비교 (Kappa 점수)
+### 모델 성능 비교 (Quadratic Weighted Kappa)
 
-| 모델 | 검증 점수 | 테스트 점수 |
-|------|-----------|-------------|
-| LightGBM | 0.72 | 0.71 |
-| XGBoost | 0.70 | 0.69 |
-| CatBoost | 0.71 | 0.70 |
-| Random Forest | 0.68 | 0.67 |
-| Logistic Regression | 0.65 | 0.64 |
+| 모델 | 검증 점수 |
+|------|-----------|
+| LightGBM (튜닝 후) | 0.72 |
+| Random Forest | 0.68 |
+| SVM (RBF) | 0.66 |
+| Logistic Regression | 0.65 |
+
+> Streamlit 대시보드는 `data/processed/final_pipe.joblib` 에 저장된 학습 완료 LightGBM 파이프라인을 사용합니다.
 
 ## 📬 연락처
 
