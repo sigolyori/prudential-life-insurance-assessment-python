@@ -6,5 +6,7 @@ __all__ = [
     "models",
     "tuning",
     "shap_utils",
+    "persist",
+    "genai",
     "mockup_app",
 ]
