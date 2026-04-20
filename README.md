@@ -16,7 +16,6 @@
 - **빠른 모델 해석**: LightGBM 네이티브 `pred_contrib` 기반 SHAP + Waterfall 차트
 - **GenAI 설명 생성**: OpenAI API를 이용한 한국어/영어 언더라이팅 사유 자동 생성 (오프라인 폴백 지원)
 - **대화형 웹 데모**: Streamlit 대시보드 (Plotly 확률 차트, 다국어 토글, Top-K 슬라이더)
-- **자동화된 CI/CD**: 테스트, 린트, 배포 자동화
 
 ## 🚀 시작하기
 
@@ -105,17 +104,6 @@ streamlit run streamlit_app.py
 
 ```
 prudential-life-insurance-assessment-python/
-├── .github/                     # GitHub Actions 워크플로우
-│   └── workflows/
-│       ├── ci.yml              # CI 파이프라인
-│       ├── cd.yml              # CD 파이프라인
-│       └── deploy-blog.yml     # 블로그 배포
-│
-├── blog/                       # Quarto 블로그
-│   ├── index.qmd              # 메인 블로그 포스트
-│   ├── images/                # 블로그 이미지
-│   └── data/                  # 블로그용 데이터
-│
 ├── data/                       # 데이터 파일
 │   ├── raw/                   # 원본 데이터 (Git LFS)
 │   ├── processed/             # 전처리된 데이터
