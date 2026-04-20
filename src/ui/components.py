@@ -232,12 +232,36 @@ def render_shap_panel(
     return top_features
 
 
+_MARKERS = ("①", "②", "③")
+
+
+def _parse_three_parts(text: str) -> tuple[str, str, str] | None:
+    """Split an explanation on ①②③ markers. Returns None if any marker is
+    missing or out of order so the caller can fall back to the raw text."""
+    if not all(m in text for m in _MARKERS):
+        return None
+    positions = [text.index(m) for m in _MARKERS]
+    if not (positions[0] < positions[1] < positions[2]):
+        return None
+
+    segments: list[str] = []
+    for i, marker in enumerate(_MARKERS):
+        start = positions[i] + len(marker)
+        end = positions[i + 1] if i + 1 < len(_MARKERS) else len(text)
+        seg = text[start:end].strip()
+        colon = seg.find(":")
+        if 0 < colon < 40 and "\n" not in seg[:colon]:
+            seg = seg[colon + 1 :].strip()
+        segments.append(seg)
+    return segments[0], segments[1], segments[2]
+
+
 def render_ai_explanation(
     pred_class: int, top_features: List[Tuple[str, float]], language: Language
 ) -> None:
-    header = "### AI 설명" if language == "ko" else "### AI Explanation"
     st.markdown("---")
-    st.markdown(header)
+    st.markdown("### AI 설명" if language == "ko" else "### AI Explanation")
+
     with st.spinner("Generating AI explanation..."):
         text = generate_underwriting_explanation(
             decision=decision_from_class(pred_class),
@@ -245,12 +269,40 @@ def render_ai_explanation(
             top_features=top_features,
             language=language,
         )
-    st.markdown(
-        f"""
-        <div style="padding:1rem;border-radius:0.5rem;background:#f8f9fa;
-                    border-left:4px solid #4e79a7;white-space:pre-wrap;">
-            {text}
-        </div>
-        """,
-        unsafe_allow_html=True,
+
+    parts = _parse_three_parts(text)
+    if parts is None:
+        st.markdown(
+            f"""
+            <div style="padding:1rem;border-radius:0.5rem;background:#f8f9fa;
+                        border-left:4px solid #4e79a7;white-space:pre-wrap;">
+                {text}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
+
+    script, reason, next_step = parts
+    decision = decision_from_class(pred_class)
+
+    script_header = (
+        "🎙️ 고객 전달 멘트" if language == "ko" else "🎙️ Customer script"
     )
+    reason_header = "💡 핵심 근거" if language == "ko" else "💡 Key reason"
+    next_header = "➡️ 다음 안내" if language == "ko" else "➡️ Next step"
+
+    st.markdown(f"**{script_header}**")
+    if decision == "approve":
+        st.success(script)
+    elif decision == "reject":
+        st.error(script)
+    else:
+        st.info(script)
+
+    st.markdown(f"**{reason_header}**")
+    st.markdown(reason)
+
+    st.markdown("---")
+    st.markdown(f"**{next_header}**")
+    st.markdown(next_step)
