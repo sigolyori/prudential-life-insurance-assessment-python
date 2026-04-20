@@ -133,7 +133,7 @@ def render_probability_chart(
         )
     )
     fig.update_layout(
-        height=440,
+        height=540,
         margin=dict(l=10, r=10, t=10, b=10),
         yaxis=dict(title="Probability", range=[0, min(1.0, float(pred_proba.max()) * 1.25)], tickformat=".0%"),
         xaxis=dict(title=""),
@@ -151,9 +151,9 @@ def render_probability_chart(
             )
         else:
             body = (
-                "Prudential 공개 데이터의 `Response` 변수는 1~8의 8단계로 기록됩니다. "
+                "Prudential 공개 데이터의 `Response` 변수는 1-8의 8단계로 기록됩니다. "
                 "정확한 정의는 공개되어 있지 않지만, 본 프로젝트에서는 "
-                "**Class 1 = 인수거절**, **Class 2~8 = 인수승인**으로 가정합니다 "
+                "**Class 1 = 인수거절**, **Class 2-8 = 인수승인**으로 가정합니다 "
                 "(`src/data.py`의 `binarize_target` 참고).\n\n"
                 "각 막대는 모델이 해당 클래스라고 판단한 확률이며, 합은 100%입니다. "
                 "주황색 막대는 최종 예측 클래스입니다."
@@ -218,6 +218,19 @@ def render_shap_panel(
     top_features: List[Tuple[str, float]] = []
 
     with tabs[0]:
+        try:
+            with st.spinner("Computing local SHAP..."):
+                contrib_info = top_contributors_for_instance(pipeline, sample, index=0, top_k=top_k)
+                top_features = contrib_info.get("top_features", [])
+                fig = waterfall_figure_for_instance(pipeline, sample, index=0, top_k=top_k)
+            st.image(_fig_to_image(fig), use_container_width=True)
+            st.caption(
+                "파란 막대는 예측을 높이는 방향, 빨간 막대는 낮추는 방향의 피처 기여도입니다."
+                if language == "ko"
+                else "Blue bars push the prediction up; red bars push it down."
+            )
+        except Exception as e:
+            st.warning(f"Waterfall failed: {e}")
         if language == "ko":
             with st.expander("📖 이 차트는 무엇을 보여주나요?", expanded=False):
                 st.markdown(
@@ -240,19 +253,6 @@ def render_shap_panel(
                     "- Longer bars = bigger influence on this specific decision.\n\n"
                     "👉 **This is the best chart to use when explaining a single case to a customer.**"
                 )
-        try:
-            with st.spinner("Computing local SHAP..."):
-                contrib_info = top_contributors_for_instance(pipeline, sample, index=0, top_k=top_k)
-                top_features = contrib_info.get("top_features", [])
-                fig = waterfall_figure_for_instance(pipeline, sample, index=0, top_k=top_k)
-            st.image(_fig_to_image(fig), use_container_width=True)
-            st.caption(
-                "파란 막대는 예측을 높이는 방향, 빨간 막대는 낮추는 방향의 피처 기여도입니다."
-                if language == "ko"
-                else "Blue bars push the prediction up; red bars push it down."
-            )
-        except Exception as e:
-            st.warning(f"Waterfall failed: {e}")
 
     if dataset_bundle is None:
         msg = (
@@ -266,6 +266,17 @@ def render_shap_panel(
         return top_features
 
     with tabs[1]:
+        try:
+            with st.spinner("Generating summary plot..."):
+                fig = summary_figure(dataset_bundle, max_display=top_k)
+            st.image(_fig_to_image(fig), use_container_width=True)
+            st.caption(
+                "전체 샘플의 SHAP 분포. 색상은 피처 값의 크기."
+                if language == "ko"
+                else "SHAP distribution across samples. Color encodes feature value."
+            )
+        except Exception as e:
+            st.warning(f"Summary plot failed: {e}")
         if language == "ko":
             with st.expander("📖 이 차트는 무엇을 보여주나요?", expanded=False):
                 st.markdown(
@@ -288,19 +299,18 @@ def render_shap_panel(
                     "👉 Example: if red dots cluster on the right, **\"higher values of that feature "
                     "raise the reject risk.\"**"
                 )
-        try:
-            with st.spinner("Generating summary plot..."):
-                fig = summary_figure(dataset_bundle, max_display=top_k)
-            st.image(_fig_to_image(fig), use_container_width=True)
-            st.caption(
-                "전체 샘플의 SHAP 분포. 색상은 피처 값의 크기."
-                if language == "ko"
-                else "SHAP distribution across samples. Color encodes feature value."
-            )
-        except Exception as e:
-            st.warning(f"Summary plot failed: {e}")
 
     with tabs[2]:
+        try:
+            fig = feature_importance_figure(dataset_bundle, max_display=top_k)
+            st.image(_fig_to_image(fig), use_container_width=True)
+            st.caption(
+                "평균 |SHAP 값| 기준 피처 중요도 (reject 클래스 기준)."
+                if language == "ko"
+                else "Mean |SHAP| importance for the reject class."
+            )
+        except Exception as e:
+            st.warning(f"Feature importance failed: {e}")
         if language == "ko":
             with st.expander("📖 이 차트는 무엇을 보여주나요?", expanded=False):
                 st.markdown(
@@ -323,18 +333,25 @@ def render_shap_panel(
                     "drive reject-risk the most?\"\n\n"
                     "👉 Unlike the Summary chart, this one only shows **magnitude**, not direction."
                 )
-        try:
-            fig = feature_importance_figure(dataset_bundle, max_display=top_k)
-            st.image(_fig_to_image(fig), use_container_width=True)
-            st.caption(
-                "평균 |SHAP 값| 기준 피처 중요도 (reject 클래스 기준)."
-                if language == "ko"
-                else "Mean |SHAP| importance for the reject class."
-            )
-        except Exception as e:
-            st.warning(f"Feature importance failed: {e}")
 
     with tabs[3]:
+        try:
+            choices = ranked_feature_names(dataset_bundle, limit=20)
+            if not choices:
+                st.info("No features available.")
+            else:
+                label = "피처 선택" if language == "ko" else "Feature"
+                feature = st.selectbox(label, options=choices, key="shap_dep_feature")
+                with st.spinner("Generating dependency plot..."):
+                    fig = dependency_figure(dataset_bundle, feature)
+                st.image(_fig_to_image(fig), use_container_width=True)
+                st.caption(
+                    "선택한 피처 값에 따른 SHAP 값 분포."
+                    if language == "ko"
+                    else "SHAP value vs. selected feature value."
+                )
+        except Exception as e:
+            st.warning(f"Dependency plot failed: {e}")
         if language == "ko":
             with st.expander("📖 이 차트는 무엇을 보여주나요?", expanded=False):
                 st.markdown(
@@ -359,23 +376,6 @@ def render_shap_panel(
                     "👉 Pick a feature from the dropdown to see **which value ranges "
                     "turn risky** for that variable."
                 )
-        try:
-            choices = ranked_feature_names(dataset_bundle, limit=20)
-            if not choices:
-                st.info("No features available.")
-            else:
-                label = "피처 선택" if language == "ko" else "Feature"
-                feature = st.selectbox(label, options=choices, key="shap_dep_feature")
-                with st.spinner("Generating dependency plot..."):
-                    fig = dependency_figure(dataset_bundle, feature)
-                st.image(_fig_to_image(fig), use_container_width=True)
-                st.caption(
-                    "선택한 피처 값에 따른 SHAP 값 분포."
-                    if language == "ko"
-                    else "SHAP value vs. selected feature value."
-                )
-        except Exception as e:
-            st.warning(f"Dependency plot failed: {e}")
 
     return top_features
 
