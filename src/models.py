@@ -1,24 +1,25 @@
 from typing import Dict
-import numpy as np
-from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from lightgbm import LGBMClassifier
 
-from .config import RANDOM_STATE, TARGET_COL, ID_COL
+from lightgbm import LGBMClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+
+from .config import RANDOM_STATE
 from .preprocess import build_preprocessor_from_df
 
 
 def make_pipelines(df_sample) -> Dict[str, Pipeline]:
-    """Create baseline pipelines for multiple models (multiclass)."""
-    # Preprocessors
+    """Create baseline pipelines for the binary underwriting task.
+
+    Target: 1 = reject (Response == 1), 0 = approve (Response ∈ {2..8}).
+    Use `src.data.binarize_target(df)` before fitting these pipelines.
+    """
     pre_linear = build_preprocessor_from_df(df_sample, for_linear=True)
     pre_tree = build_preprocessor_from_df(df_sample, for_linear=False)
 
-    # Models
     logit = LogisticRegression(
-        multi_class="multinomial",
         solver="lbfgs",
         max_iter=1000,
         random_state=RANDOM_STATE,
@@ -40,8 +41,7 @@ def make_pipelines(df_sample) -> Dict[str, Pipeline]:
     )
 
     lgbm = LGBMClassifier(
-        objective="multiclass",
-        num_class=8,  # Prudential target classes 1~8
+        objective="binary",
         random_state=RANDOM_STATE,
         n_estimators=1000,
         learning_rate=0.05,

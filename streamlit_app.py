@@ -12,7 +12,9 @@ import streamlit as st
 sys.path.append(str(Path(__file__).parent))
 
 from src.ui import (
+    ResourceLoadError,
     get_model_info,
+    load_dataset_shap,
     load_resources,
     render_ai_explanation,
     render_decision_badge,
@@ -54,7 +56,12 @@ def _align_to_model(model, sample: pd.DataFrame) -> pd.DataFrame:
 def _predict(model, sample: pd.DataFrame):
     aligned = _align_to_model(model, sample)
     pred_proba = model.predict_proba(aligned)[0]
-    pred_class = int(np.argmax(pred_proba)) + 1
+    idx = int(np.argmax(pred_proba))
+    classes = getattr(model, "classes_", None)
+    if classes is None:
+        clf = getattr(model, "named_steps", {}).get("clf")
+        classes = getattr(clf, "classes_", None)
+    pred_class = int(classes[idx]) if classes is not None else idx
     return pred_class, pred_proba, aligned
 
 
@@ -65,7 +72,15 @@ def main() -> None:
         "사이드바에서 테스트 케이스와 설정을 조정해보세요."
     )
 
-    resources = load_resources()
+    try:
+        resources = load_resources()
+    except ResourceLoadError as e:
+        st.error(str(e))
+        st.stop()
+    except Exception as e:
+        st.error(f"리소스 로드 중 알 수 없는 오류가 발생했습니다: {e}")
+        st.stop()
+
     model_info = get_model_info(resources.pipeline)
     settings = render_sidebar(len(resources.X_test), model_info)
 
@@ -81,10 +96,13 @@ def main() -> None:
 
     col_prob, col_shap = st.columns(2)
     with col_prob:
-        render_probability_chart(pred_proba, settings["language"])
+        clf = resources.pipeline.named_steps.get("clf")
+        class_labels = list(getattr(clf, "classes_", [])) or None
+        render_probability_chart(pred_proba, settings["language"], class_labels=class_labels)
     with col_shap:
+        dataset_bundle = load_dataset_shap(resources.pipeline, resources.X_test, max_samples=200)
         top_features = render_shap_panel(
-            resources.pipeline, sample, settings["top_k"], settings["language"]
+            resources.pipeline, sample, dataset_bundle, settings["top_k"], settings["language"]
         )
 
     render_ai_explanation(pred_class, top_features, settings["language"])

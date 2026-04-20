@@ -208,6 +208,30 @@ docker run -p 7860:7860 prudential-insurance-app
 
 > Streamlit 대시보드는 `data/processed/final_pipe.joblib` 에 저장된 학습 완료 LightGBM 파이프라인을 사용합니다.
 
+## 🤖 생성형 AI 연계
+
+SHAP 분석 결과를 GPT-4o-mini에 전달하여 콜센터 상담원용 승인/거절 사유를
+한국어 또는 영어로 자동 생성합니다. (`src/genai.py`)
+
+- 인수거절 (Response == 1 → binary 1): 위험 요인 중심의 거절 사유 생성
+- 인수승인 (Response 2~8 → binary 0): 위험 요인이 통제 가능함을 근거로 승인 사유 생성
+- `OPENAI_API_KEY` 미설정 시 오프라인 fallback 텍스트 제공 (배포 환경에서도 앱이 중단되지 않음)
+- 모델은 환경변수 `OPENAI_MODEL`로 교체 가능 (기본값 `gpt-4o-mini`)
+
+## ⚠️ 데이터 가정
+
+Prudential 데이터의 `Response` 변수(1~8)에 대한 상세 정의는 공개되지 않았습니다.
+본 프로젝트에서는 `Response == 1`을 **인수거절(1)**, 나머지(2~8)를 **인수승인(0)**으로
+가정하여 이진분류 문제로 단순화했습니다. 변환 로직은 `src.data.binarize_target()`
+에 구현되어 있으며, 훈련 데이터 분할 직전에 호출해야 합니다.
+
+```python
+from src.data import load_train, binarize_target, split_X_y
+
+df = binarize_target(load_train())
+X, y = split_X_y(df)
+```
+
 ## 📬 연락처
 
 질문이나 제안사항이 있으시면 이메일로 문의해주세요: heeyoungkim@kakao.com
