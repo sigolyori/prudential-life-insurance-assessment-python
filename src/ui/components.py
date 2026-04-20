@@ -89,10 +89,29 @@ def render_decision_badge(pred_class: int, language: Language) -> None:
 def render_probability_chart(
     pred_proba: np.ndarray, language: Language, class_labels: list | None = None
 ) -> None:
+    is_binary = (
+        class_labels is not None
+        and len(class_labels) == 2
+        and set(int(c) for c in class_labels) == {0, 1}
+    )
+
     header = "#### 클래스 확률" if language == "ko" else "#### Class probabilities"
     st.markdown(header)
+
+    if language == "ko":
+        lead = (
+            "모델이 **각 결과에 대해 얼마나 확신하는지**를 나타냅니다. "
+            "막대가 가장 높은 클래스가 최종 예측입니다."
+        )
+    else:
+        lead = (
+            "How confident the model is in **each possible outcome**. "
+            "The tallest bar is the final prediction."
+        )
+    st.caption(lead)
+
     if class_labels is not None and len(class_labels) == len(pred_proba):
-        if len(class_labels) == 2:
+        if is_binary:
             approve_label = "승인(0)" if language == "ko" else "Approve (0)"
             reject_label = "거절(1)" if language == "ko" else "Reject (1)"
             labels_by_value = {0: approve_label, 1: reject_label}
@@ -114,12 +133,51 @@ def render_probability_chart(
         )
     )
     fig.update_layout(
-        height=300,
+        height=440,
         margin=dict(l=10, r=10, t=10, b=10),
         yaxis=dict(title="Probability", range=[0, min(1.0, float(pred_proba.max()) * 1.25)], tickformat=".0%"),
         xaxis=dict(title=""),
     )
     st.plotly_chart(fig, use_container_width=True)
+
+    if language == "ko":
+        expander_label = "📖 이 클래스들은 무엇인가요?"
+        if is_binary:
+            body = (
+                "- **승인(0)**: 보험 인수 가능. 대부분의 정상 신청이 여기에 해당합니다.\n"
+                "- **거절(1)**: 보험 인수가 어렵다고 판단된 신청.\n\n"
+                "모델은 두 결과의 확률을 계산하고 더 높은 쪽을 예측으로 선택합니다. "
+                "확률 차이가 작으면 경계선 사례이므로 상담원의 추가 확인이 권장됩니다."
+            )
+        else:
+            body = (
+                "Prudential 공개 데이터의 `Response` 변수는 1~8의 8단계로 기록됩니다. "
+                "정확한 정의는 공개되어 있지 않지만, 본 프로젝트에서는 "
+                "**Class 1 = 인수거절**, **Class 2~8 = 인수승인**으로 가정합니다 "
+                "(`src/data.py`의 `binarize_target` 참고).\n\n"
+                "각 막대는 모델이 해당 클래스라고 판단한 확률이며, 합은 100%입니다. "
+                "주황색 막대는 최종 예측 클래스입니다."
+            )
+    else:
+        expander_label = "📖 What do these classes mean?"
+        if is_binary:
+            body = (
+                "- **Approve (0)**: Eligible for underwriting. Most typical applications.\n"
+                "- **Reject (1)**: Flagged as not underwritable.\n\n"
+                "The model outputs a probability for each outcome and picks the larger one. "
+                "If the gap is small, the case is borderline and warrants human review."
+            )
+        else:
+            body = (
+                "Prudential's public `Response` variable has 8 ordinal levels. "
+                "Their exact meanings are not published, so this project assumes "
+                "**Class 1 = reject** and **Class 2-8 = approve** "
+                "(see `binarize_target` in `src/data.py`).\n\n"
+                "Each bar is the model's probability for that class; probabilities "
+                "sum to 100%. The orange bar is the predicted class."
+            )
+    with st.expander(expander_label):
+        st.markdown(body)
 
 
 def _fig_to_image(fig) -> Image.Image:
@@ -160,6 +218,28 @@ def render_shap_panel(
     top_features: List[Tuple[str, float]] = []
 
     with tabs[0]:
+        if language == "ko":
+            with st.expander("📖 이 차트는 무엇을 보여주나요?", expanded=False):
+                st.markdown(
+                    "**지금 보고 있는 이 한 명의 고객**에 대해 모델이 어떻게 결정을 내렸는지 "
+                    "단계별로 보여주는 차트입니다.\n\n"
+                    "- 차트 아래쪽의 **기준값(base value)** 은 모든 고객의 평균 예측입니다.\n"
+                    "- 각 피처(나이, BMI, 병력 등)가 **기준값에서 얼마나 예측을 밀어올렸거나 내렸는지**를 막대로 표시합니다.\n"
+                    "- **빨강**: 거절 확률을 높이는 쪽으로 기여. **파랑**: 승인 쪽으로 기여.\n"
+                    "- 막대 길이가 길수록 이 고객의 결정에 더 큰 영향을 준 피처입니다.\n\n"
+                    "👉 **이 한 건의 결정을 고객에게 설명할 때 쓰기 가장 좋은 차트입니다.**"
+                )
+        else:
+            with st.expander("📖 What does this chart show?", expanded=False):
+                st.markdown(
+                    "A step-by-step view of how the model decided **for this one customer**.\n\n"
+                    "- The **base value** at the bottom is the average prediction across all customers.\n"
+                    "- Each feature (age, BMI, medical history, ...) is drawn as a bar showing "
+                    "**how much it pushed the prediction up or down from that base**.\n"
+                    "- **Red**: pushes toward reject. **Blue**: pushes toward approve.\n"
+                    "- Longer bars = bigger influence on this specific decision.\n\n"
+                    "👉 **This is the best chart to use when explaining a single case to a customer.**"
+                )
         try:
             with st.spinner("Computing local SHAP..."):
                 contrib_info = top_contributors_for_instance(pipeline, sample, index=0, top_k=top_k)
@@ -186,6 +266,28 @@ def render_shap_panel(
         return top_features
 
     with tabs[1]:
+        if language == "ko":
+            with st.expander("📖 이 차트는 무엇을 보여주나요?", expanded=False):
+                st.markdown(
+                    "**전체 고객 데이터에서** 각 피처가 모델 예측에 어떤 영향을 주는지 "
+                    "한눈에 보는 차트입니다.\n\n"
+                    "- **점 하나 = 고객 한 명**. 여러 고객의 결과가 겹쳐서 보입니다.\n"
+                    "- **가로축**: SHAP 값 (오른쪽 = 거절 방향, 왼쪽 = 승인 방향).\n"
+                    "- **색**: 그 피처의 값 크기 (🔴 빨강 = 높은 값, 🔵 파랑 = 낮은 값).\n"
+                    "- 위쪽에 있는 피처일수록 전반적으로 영향력이 큽니다.\n\n"
+                    "👉 예: 빨간 점들이 오른쪽에 몰려 있다면 **\"그 피처 값이 높을수록 거절 위험이 커진다\"** 는 뜻입니다."
+                )
+        else:
+            with st.expander("📖 What does this chart show?", expanded=False):
+                st.markdown(
+                    "A bird's-eye view of **how each feature affects predictions across all customers**.\n\n"
+                    "- **Each dot = one customer.** Many dots pile up to show the distribution.\n"
+                    "- **X-axis**: SHAP value (right = pushes toward reject, left = pushes toward approve).\n"
+                    "- **Color**: the feature's own value (🔴 red = high, 🔵 blue = low).\n"
+                    "- Features near the top have the largest overall influence.\n\n"
+                    "👉 Example: if red dots cluster on the right, **\"higher values of that feature "
+                    "raise the reject risk.\"**"
+                )
         try:
             with st.spinner("Generating summary plot..."):
                 fig = summary_figure(dataset_bundle, max_display=top_k)
@@ -199,6 +301,28 @@ def render_shap_panel(
             st.warning(f"Summary plot failed: {e}")
 
     with tabs[2]:
+        if language == "ko":
+            with st.expander("📖 이 차트는 무엇을 보여주나요?", expanded=False):
+                st.markdown(
+                    "**어떤 피처가 모델 전체에서 가장 중요한지** 순서대로 보여주는 막대그래프입니다.\n\n"
+                    "- 각 피처의 SHAP 값 **절댓값 평균**을 막대 길이로 그립니다 "
+                    "(방향에 상관없이 \"얼마나 크게 영향을 미쳤나?\").\n"
+                    "- 위에 있을수록 중요한 피처입니다.\n"
+                    "- 현재는 **거절(reject) 클래스 기준** 중요도를 보여주어, "
+                    "\"어떤 변수가 거절 위험 판단에 가장 큰 역할을 하는가?\"를 알 수 있습니다.\n\n"
+                    "👉 Summary 차트와 달리 방향(위험↑/↓)은 알 수 없고, **크기만** 비교합니다."
+                )
+        else:
+            with st.expander("📖 What does this chart show?", expanded=False):
+                st.markdown(
+                    "A ranked bar chart of **which features matter most overall**.\n\n"
+                    "- Bar length = **mean absolute SHAP value** across all customers "
+                    "(\"how big is this feature's influence, regardless of direction?\").\n"
+                    "- Top features are the most important ones.\n"
+                    "- Computed for the **reject class**, so you see \"which variables "
+                    "drive reject-risk the most?\"\n\n"
+                    "👉 Unlike the Summary chart, this one only shows **magnitude**, not direction."
+                )
         try:
             fig = feature_importance_figure(dataset_bundle, max_display=top_k)
             st.image(_fig_to_image(fig), use_container_width=True)
@@ -211,6 +335,30 @@ def render_shap_panel(
             st.warning(f"Feature importance failed: {e}")
 
     with tabs[3]:
+        if language == "ko":
+            with st.expander("📖 이 차트는 무엇을 보여주나요?", expanded=False):
+                st.markdown(
+                    "**특정 피처 하나의 값이 바뀔 때 모델 예측이 어떻게 바뀌는지** "
+                    "산점도로 보여줍니다.\n\n"
+                    "- **가로축**: 선택한 피처의 실제 값.\n"
+                    "- **세로축**: 그 값이 만든 SHAP 기여도 (양수 = 거절 방향, 음수 = 승인 방향).\n"
+                    "- 점이 우상향하면 **\"값이 클수록 거절 위험↑\"**, 우하향하면 **\"값이 클수록 승인 경향↑\"** 입니다.\n"
+                    "- 관계가 직선이 아니라 **비선형(꺾임, U자형 등)** 일 수도 있습니다.\n\n"
+                    "👉 왼쪽 드롭다운에서 궁금한 피처를 골라 \"이 변수는 어떤 구간에서 위험해지나?\"를 확인하세요."
+                )
+        else:
+            with st.expander("📖 What does this chart show?", expanded=False):
+                st.markdown(
+                    "A scatter plot of **how a single feature's value affects the prediction**.\n\n"
+                    "- **X-axis**: the actual value of the chosen feature.\n"
+                    "- **Y-axis**: the SHAP contribution it produced "
+                    "(positive = reject direction, negative = approve direction).\n"
+                    "- Rising points = **\"higher values → more reject-risk\"**. "
+                    "Falling points = \"higher values → more approve-leaning\".\n"
+                    "- The relationship may be **non-linear** (kinks, U-shapes, plateaus).\n\n"
+                    "👉 Pick a feature from the dropdown to see **which value ranges "
+                    "turn risky** for that variable."
+                )
         try:
             choices = ranked_feature_names(dataset_bundle, limit=20)
             if not choices:
