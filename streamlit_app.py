@@ -18,8 +18,12 @@ from src.ui import (
     load_resources,
     render_ai_explanation,
     render_decision_badge,
-    render_probability_chart,
-    render_shap_panel,
+    render_probability_body,
+    render_probability_expander,
+    render_probability_header,
+    render_shap_body,
+    render_shap_expander,
+    render_shap_header,
     render_sidebar,
 )
 
@@ -94,16 +98,29 @@ def main() -> None:
     st.subheader("Prediction")
     render_decision_badge(pred_class, settings["language"])
 
-    col_prob, col_shap = st.columns(2)
-    with col_prob:
-        clf = resources.pipeline.named_steps.get("clf")
-        class_labels = list(getattr(clf, "classes_", [])) or None
-        render_probability_chart(pred_proba, settings["language"], class_labels=class_labels)
-    with col_shap:
-        dataset_bundle = load_dataset_shap(resources.pipeline, resources.X_test, max_samples=200)
-        top_features = render_shap_panel(
+    clf = resources.pipeline.named_steps.get("clf")
+    class_labels = list(getattr(clf, "classes_", [])) or None
+    dataset_bundle = load_dataset_shap(resources.pipeline, resources.X_test, max_samples=200)
+
+    col_h_prob, col_h_shap = st.columns(2)
+    with col_h_prob:
+        render_probability_header(settings["language"])
+    with col_h_shap:
+        render_shap_header(settings["language"])
+
+    col_b_prob, col_b_shap = st.columns(2)
+    with col_b_prob:
+        render_probability_body(pred_proba, settings["language"], class_labels=class_labels)
+    with col_b_shap:
+        top_features = render_shap_body(
             resources.pipeline, sample, dataset_bundle, settings["top_k"], settings["language"]
         )
+
+    col_e_prob, col_e_shap = st.columns(2)
+    with col_e_prob:
+        render_probability_expander(settings["language"], class_labels=class_labels)
+    with col_e_shap:
+        render_shap_expander(settings["language"])
 
     render_ai_explanation(pred_class, top_features, settings["language"])
 
